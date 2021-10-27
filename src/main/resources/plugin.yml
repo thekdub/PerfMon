@@ -1,0 +1,4 @@
+name: PerfMon
+main: com.thekdub.perfmon.PerfMon
+version: 1.0.0
+author: thekdub
