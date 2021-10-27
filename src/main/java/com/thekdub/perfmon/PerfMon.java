@@ -1,10 +1,5 @@
 package com.thekdub.perfmon;
 
-import org.bukkit.Bukkit;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitTask;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -14,6 +9,10 @@ import java.time.Instant;
 
 import com.sun.management.OperatingSystemMXBean;
 
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.java.JavaPlugin;
+
 public class PerfMon extends JavaPlugin {
   
   private final TickMonitor tickMonitor = new TickMonitor(this);
@@ -21,7 +20,7 @@ public class PerfMon extends JavaPlugin {
   private final MemoryMonitor memoryMonitor = new MemoryMonitor(this);
   private final CPUMonitor cpuMonitor = new CPUMonitor(this);
   
-  private BukkitTask scribe;
+  private int scribe = -1;
   private final long start = System.currentTimeMillis();
   
   public void onEnable() {
@@ -47,7 +46,7 @@ public class PerfMon extends JavaPlugin {
         e.printStackTrace();
       }
     }
-    scribe = Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
+    scribe = Bukkit.getScheduler().scheduleAsyncRepeatingTask(this, () -> {
       try (BufferedWriter writer = new BufferedWriter(
             new FileWriter(new File(getDataFolder() + File.separator + "data.csv"), true))) {
         writer.write(String.format("%s,%d,%.3f,%.3f,%.3f,%d,%d,%d,%.3f\n",
@@ -63,7 +62,7 @@ public class PerfMon extends JavaPlugin {
         writer.flush();
       } catch (IOException e) {
         e.printStackTrace();
-        scribe.cancel();
+        Bukkit.getScheduler().cancelTask(scribe);
       }
     }, 20*60, 20*60*5);
   }
@@ -73,7 +72,8 @@ public class PerfMon extends JavaPlugin {
     playerMonitor.stop();
     memoryMonitor.stop();
     cpuMonitor.stop();
-    scribe.cancel();
+    Bukkit.getScheduler().cancelTask(scribe);
+    scribe = -1;
   }
   
   private static abstract class Monitor {
@@ -84,7 +84,7 @@ public class PerfMon extends JavaPlugin {
     private final long frequency;
     private final long delay;
   
-    private BukkitTask task = null;
+    private int task = -1;
   
     public Monitor(Plugin plugin, long frequency, long delay, long avgCount) {
       this.plugin = plugin;
@@ -95,15 +95,15 @@ public class PerfMon extends JavaPlugin {
   
     public void start(Accumulator accumulator) {
       stop();
-      task = Bukkit.getScheduler().runTaskTimer(plugin,
+      task = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin,
             () -> avg = ((avg * (avgCount-1)) + accumulator.run()) / avgCount, delay, frequency);
     }
   
     public void stop() {
       avg = 0;
-      if (task != null) {
-        task.cancel();
-        task = null;
+      if (task >= 0) {
+        Bukkit.getScheduler().cancelTask(task);
+        task = -1;
       }
     }
   
@@ -144,7 +144,7 @@ public class PerfMon extends JavaPlugin {
     }
   
     public void start() {
-      super.start(() -> Bukkit.getOnlinePlayers().size());
+      super.start(() -> Bukkit.getOnlinePlayers().length);
     }
   }
   private static class MemoryMonitor extends Monitor {
