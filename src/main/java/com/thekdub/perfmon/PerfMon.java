@@ -140,7 +140,7 @@ public class PerfMon extends JavaPlugin {
   private static class PlayerMonitor extends Monitor {
   
     public PlayerMonitor(Plugin plugin) {
-      super(plugin, 20, 20, 60);
+      super(plugin, 20*5, 20*5, 12);
     }
   
     public void start() {
@@ -150,7 +150,7 @@ public class PerfMon extends JavaPlugin {
   private static class MemoryMonitor extends Monitor {
     
     public MemoryMonitor(Plugin plugin) {
-      super(plugin, 20, 20, 60);
+      super(plugin, 20*5, 20*5, 12);
     }
     
     public void start() {
@@ -176,7 +176,7 @@ public class PerfMon extends JavaPlugin {
   private static class CPUMonitor extends Monitor {
     
     public CPUMonitor(Plugin plugin) {
-      super(plugin, 20, 20, 60);
+      super(plugin, 20*5, 20*5, 12);
     }
     
     public void start() {
